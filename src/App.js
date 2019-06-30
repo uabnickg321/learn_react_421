@@ -14,8 +14,10 @@ class App extends React.Component {
     // Must bind the 'this' event handler to THIS component instance. This function can now be passed as a callback without
     // losing its context.
     this.handleChange = this.handleChange.bind(this);
+    this.handleNewSearchTerm = this.handleNewSearchTerm.bind(this);
     // Initialize the state for this component.
     this.state = {
+      loading: false,
       hits: [],
       filtered: []
     };
@@ -26,12 +28,14 @@ class App extends React.Component {
   // This function uses 'Async/Await', which is a special JavaScript syntax for handling promise based requests, such as axios.
   async componentDidMount() {
     try {
+      this.setState({ loading: true });
       // Fetch the api results and store it in a local variable 'result'
       const result = await axios.get(API + DEFAULT_QUERY);
 
       // Update the state of this component to store the results in our state array 'hits'
       this.setState({
-        hits: result.data.hits
+        hits: result.data.hits,
+        loading: false
       });
     } catch (err) {
       // Simple error handling should something go wrong with the fetching
@@ -60,7 +64,8 @@ class App extends React.Component {
       });
     } else {
       // If no search input, return newList with all of the search results
-      newList = this.state.hits;
+      // newList = this.state.hits;
+      newList = [];
     }
 
     // Set the 'filtered' state array to the value of 'newList'
@@ -69,14 +74,41 @@ class App extends React.Component {
     });
   }
 
+  async handleNewSearchTerm(e) {
+    e.preventDefault();
+    if (e.target.newSearch.value !== '') {
+      const newTerm = e.target.newSearch.value;
+      this.setState({ loading: true });
+      try {
+        const result = await axios.get(API + newTerm);
+
+        this.setState({
+          hits: result.data.hits,
+          filtered: [],
+          loading: false
+        });
+      } catch (err) {
+        console.error(err.message);
+      }
+    }
+  }
+
   // The render() method will render what is returned to the screen;
   render() {
     return (
       <div className='container'>
         {/* React JSX component syntax -- to put our components in the App  */}
         {/* This is also where any state/methods get passed down as 'PROPS' to the child components */}
-        <Header handleChange={this.handleChange} />
-        <SearchList hits={this.state.hits} filtered={this.state.filtered} />
+        <Header
+          loading={this.state.loading}
+          handleChange={this.handleChange}
+          handleNewSearchTerm={this.handleNewSearchTerm}
+        />
+        <SearchList
+          loading={this.state.loading}
+          hits={this.state.hits}
+          filtered={this.state.filtered}
+        />
       </div>
     );
   }
